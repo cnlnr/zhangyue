@@ -1,57 +1,37 @@
-# 导入必要的库
-from bs4 import BeautifulSoup  # HTML解析库
-import requests  # HTTP请求库
-import os  # 操作系统接口库
+# 导入所需模块
+from bs4 import BeautifulSoup  # HTML解析
+import requests, os  # HTTP请求和文件操作
 
-# 定义基础URL（不包含章节ID参数）
+# 书籍基础URL（cid参数表示章节ID）
 base_url = "https://www.ireader.com/index.php?ca=Chapter.Index&pca=bookdetail.index&bid=1023955&cid="
 
-# 获取第一页内容用于提取书名
-response = requests.get(base_url + "1")  # 请求第一章内容
-response.raise_for_status()  # 检查请求是否成功（HTTP状态码200）
-soup = BeautifulSoup(response.text, 'html.parser')  # 解析HTML内容
+# 获取第一章内容并提取书名
+r = requests.get(base_url + "1")
+book_title = BeautifulSoup(r.text, 'html.parser').select_one('i a').get_text()  # 从i>a标签提取书名
+os.makedirs(book_title, exist_ok=True)  # 创建书名目录
+print(f"书名：{book_title}\n")
 
-# 提取书名（通过CSS选择器定位书名元素）
-book_title = soup.select_one('i a').get_text().strip()  # 从<i>标签内的<a>标签获取文本
-os.makedirs(book_title, exist_ok=True)  # 创建以书名为名的文件夹（如果已存在则忽略）
-
-# 初始化页码计数器
+# 章节计数器
 page = 1
-while True:  # 无限循环直到没有新章节
-    # 构建当前章节URL
-    url = base_url + str(page)
-    response = requests.get(url)  # 获取章节页面
-    response.raise_for_status()  # 确保请求成功
+
+# 循环下载所有章节
+while True:
+    # 获取并解析当前章节HTML
+    soup = BeautifulSoup(requests.get(base_url + str(page)).text, 'html.parser')
     
-    # 解析HTML内容
-    soup = BeautifulSoup(response.text, 'html.parser')
+    # 查找文章内容区域和标题（找不到则退出循环）
+    if not (article := soup.find('div', class_='article')) or not (title := article.find('h2')): 
+        break
     
-    # 查找文章内容区域（使用class选择器）
-    article = soup.find('div', class_='article')
-    # 在文章区域内查找标题（h2标签）
-    title_tag = article.find('h2') if article else None
+    # 保存章节内容到文本文件
+    title = title.get_text()
+    with open(f"{book_title}/{title}.txt", 'w') as f:
+        # 提取所有段落内容并连接为文本
+        f.write("\n".join(p.get_text() for p in article.find_all('p')))
     
-    # 检查是否找到内容和标题
-    if not article or not title_tag:
-        break  # 如果找不到内容或标题，退出循环
-    
-    # 获取标题文本并清理空格
-    title_text = title_tag.get_text().strip()
-    # 构建文件路径：书名/章节标题.txt
-    file_path = os.path.join(book_title, f"{title_text}.txt")
-    
-    # 提取所有段落文本（<p>标签内容）
-    paragraphs = [p.get_text().strip() for p in article.find_all('p')]
-    # 用换行符连接段落
-    content = "\n".join(paragraphs)
-    
-    # 写入文件（UTF-8编码）
-    with open(file_path, 'w', encoding='utf-8') as f:
-        f.write(content)
-    
-    # 显示进度信息
-    print(f"已保存第 {page} 页: {title_text}")
-    page += 1  # 页码递增，准备获取下一章
+    # 打印进度
+    print(f"{page} 标题：{title}")
+    page += 1  # 下一章
 
 # 完成提示
-print(f"所有章节下载完成！")
+print("所有章节下载完成")
