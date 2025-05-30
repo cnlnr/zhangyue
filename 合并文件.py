@@ -18,12 +18,13 @@ os.chdir(dir_path)
 # files = sorted(glob.glob("*.txt"), key=os.path.getmtime) # 时间排序，启用请注释掉下一行代码
 files = sorted(glob.glob("*.txt"), key=lambda f: int(f.split('.')[0])) # 前缀排序
 
+prefix = 0
 # 合并文件
 with open(out_file, "w") as f_out:
     for file in files:
         with open(file) as f_in:
-            # 修改点：使用文件名作为分隔符
-            f_out.write(f"\n\n===== {file.removesuffix(".txt")[2:]} =====\n\n") # 删除前两个字符（前缀）
+            prefix += 1
+            f_out.write(f"\n\n===== {file.removesuffix(".txt").removeprefix(f"{prefix}.")} =====\n\n") # 删除前缀
             # f_out.write(f"\n\n===== {file.removesuffix(".txt")} =====\n\n")
             f_out.write(f_in.read())
 
