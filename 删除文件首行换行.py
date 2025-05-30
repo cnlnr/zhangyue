@@ -16,7 +16,7 @@ def process_txt_files(folder_path):
                     
                     # 检查文件是否为空
                     if not lines:
-                        print(f"跳过空文件: {file_path}")
+                        print(f"文件为空: {file_path}")
                         continue
                     
                     # 处理第一行
@@ -25,11 +25,10 @@ def process_txt_files(folder_path):
                         with open(file_path, 'w', encoding='utf-8') as f:
                             f.writelines(lines[1:])
                     else:
-                        # 打印警告（保留原始内容）
-                        first_line_content = lines[0].rstrip('\n').replace('\n', '\\n')
-                        print(f"警告: {file_path} - 首行不是空行，内容为: '{first_line_content}'")
+                        # 打印警告
+                        print(f"警告: {file_path} 首行不是空行")
                 except Exception as e:
-                    print(f"处理文件 {file_path} 时出错: {str(e)}")
+                    print(f"处理文件 {file_path} 出错: {str(e)}")
 
 if __name__ == "__main__":
     target_folder = "不死仙帝"
